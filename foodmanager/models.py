@@ -16,7 +16,7 @@ class Dish(models.Model):
 
 
 class DishStep(models.Model):
-    dish_primary_key = models.ForeignKey(Dish, on_delete=models.CASCADE)
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
     order = models.IntegerField()
     picture = models.CharField(max_length=100)
     description = models.TextField()
@@ -27,14 +27,14 @@ class Product(models.Model):
 
 
 class DishProduct(models.Model):
-    dish_primary_key = models.ForeignKey(Dish, on_delete=models.CASCADE)
-    product_primary_key = models.ManyToManyField(Product)
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     amount = models.CharField(max_length=200)
 
 
 class UserDish(models.Model):
-    dish_primary_key = models.ManyToManyField(Dish)
-    user_primary_key = models.ForeignKey(User, on_delete=models.CASCADE)
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     liked = models.BooleanField(default=False)
     disliked = models.BooleanField(default=False)
     shown_date_time = models.DateTimeField()
@@ -45,9 +45,8 @@ class Tag(models.Model):
 
 
 class UsedTag(models.Model):
-    tag_primary_key = models.ForeignKey(Tag, on_delete=models.DO_NOTHING)
-    dish_primary_key = models.ManyToManyField(Dish)
-    product_primary_key = models.ManyToManyField(Product)
-    user_primary_key = models.ManyToManyField(User)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    dish = models.ForeignKey(Dish, null=True, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
 
