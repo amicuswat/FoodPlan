@@ -17,38 +17,75 @@ def parse_imcoock_recipe(recipe_id):
 	soup = BeautifulSoup(response.text, 'html.parser')
 	return soup
 
-def get_recipe_info(url):
-	for recipe in get_imcoock_recipe_header(url):
-			recipe_info = {}
-			recipe_steps = []
-			recipe_id = recipe.find("a")["href"]
-			recipe_response = parse_imcoock_recipe(recipe_id)
-			recipe_name = recipe_response.find("h1", {"itemprop": "name"})
-			recipe_info["Название блюда"] = recipe_name.get_text()
-			recipe_description = recipe_response.find("span", {"itemprop": "description"}) # Может быть NullType, нужна проверка
-			if recipe_description:
-				recipe_info["Описание блюда"] = recipe_description.get_text()
-			recipe_ingredients = recipe_response.find_all("p", {"itemprop": "recipeIngredient"})
-			for num, recipe_ingredient in enumerate(recipe_ingredients):
-				recipe_info[f"{num}. Ингридиенты для блюда"] = recipe_ingredient.get_text()
-			recipe_image = recipe_response.find("img", {"class": "resultphoto"})
-			recipe_info["Ссылка на картинку блюда"] = recipe_image
-			instructions = recipe_response.find("div", {"class": "instructions"})
-			steps = instructions.find_all("p")
-			for step in steps:
-				if step.get_text() in ["Подборка рецептов", "Коллекция рецептов", "", "\n", " "]: # Захардкожено, но подругому никак
-					continue
-				step_img = step.find("img")
-				recipe_steps.append(f"{len(recipe_steps)}. Шаг {step.get_text()} Картинка к шагу: {step_img}")
-			recipe_info["Шаги приготовления: "] = recipe_steps
-			time.sleep(3)
-			print(recipe_info)
+def get_recipe_info(recipe_header):
+	recipe_id = recipe_header.find("a")["href"]
+	recipe_response = parse_imcoock_recipe(recipe_id)
+
+	recipe_name = recipe_response.find("h1", {"itemprop": "name"}) \
+		.get_text()
+
+	desc_html = recipe_response.find("span", {
+		"itemprop": "description"})
+
+	if not desc_html:
+		recipe_description = None
+	else:
+		recipe_description = desc_html.get_text()
+
+	products_html = recipe_response.find_all("p", {
+		"itemprop": "recipeIngredient"})
+
+	products = [elm.get_text().split(" - ") for elm in products_html]
+
+	recipe_image = recipe_response.find("img",
+										{"class": "resultphoto"})
+
+	if recipe_image:
+		recipe_image = recipe_image['src']
+
+	steps_html = recipe_response \
+		.find("div", {"class": "instructions"}) \
+		.find_all("p")
+
+	steps = []
+	step_order = 1
+	for step_html in steps_html:
+		if step_html.get_text() not in ["Подборка рецептов",
+										"Коллекция рецептов", "", "\n",
+										" "]:
+			img_link = step_html.find("img")
+			if img_link:
+				img_link = img_link['src']
+
+			step = {
+				"order": step_order,
+				"img_link": img_link,
+				"desc": step_html.get_text()
+			}
+			steps.append(step)
+			step_order += 1
+
+	recipe_data = {
+		"dish_title": recipe_name,
+		"dish_desc": recipe_description,
+		"products": products,
+		"dish_img_link": recipe_image,
+		"steps": steps
+	}
+
+	time.sleep(3)
+	return recipe_data
 
 
-def parse_nongluten():
-	for page in range(4):
-		nongluten_url = f'https://www.iamcook.ru/event/baking/gluten-free-baking/{page+1}'
-		return get_recipe_info(nongluten_url)
+def process_nongluten_recipes():
+	links = [f'https://www.iamcook.ru/event/baking/gluten-free-baking/{page+1}'
+			 for page in range(4)]
+
+	for url in links:
+		for recipe_header in get_imcoock_recipe_header(url):
+			recipe_data = get_recipe_info(recipe_header)
+			print(recipe_data)
+
 
 
 def parse_nonlactose_cakes():
@@ -66,6 +103,9 @@ def image_download():
 
 
 if __name__ == "__main__":
-	print(parse_nongluten())
-	print(parse_nonlactose_cakes())
-	print(parse_vegetarian_dishes())
+	process_nongluten_recipes()
+
+
+
+	# print(parse_nonlactose_cakes())
+	# print(parse_vegetarian_dishes())
