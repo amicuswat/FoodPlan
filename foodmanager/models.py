@@ -14,6 +14,9 @@ class Dish(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
 
+    def __str__(self):
+        return self.title
+
 
 class DishStep(models.Model):
     dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
@@ -24,6 +27,9 @@ class DishStep(models.Model):
 
 class Product(models.Model):
     title = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.title
 
 
 class DishProduct(models.Model):
@@ -42,6 +48,9 @@ class UserDish(models.Model):
 
 class Tag(models.Model):
     title = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.title
 
 
 class UsedTag(models.Model):
