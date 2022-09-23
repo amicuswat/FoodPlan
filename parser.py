@@ -1,7 +1,14 @@
 import requests
+import os
 import time
 from bs4 import BeautifulSoup
+from foodmanager.models import Dish, DishStep, Product, DishProduct, Tag, UsedTag
 
+
+def main():
+	# process_nongluten_recipes()
+	process_nonlactose_recipes()
+	prodess_vegetarian_recipes()
 
 
 def get_imcoock_recipe_header(url):
@@ -77,25 +84,93 @@ def get_recipe_info(recipe_header):
 	return recipe_data
 
 
+def save_data(url, tag):
+	for recipe_header in get_imcoock_recipe_header(url):
+		is_dish_broken = False
+
+		recipe_data = get_recipe_info(recipe_header)
+		dishes = Dish.objects.filter(title=recipe_data['dish_title'])
+		if not dishes:
+			dish = Dish(title=recipe_data['dish_title'],
+						description=recipe_data['dish_desc'],
+						picture=recipe_data['dish_img_link'])
+			dish.save()
+
+			used_tag = UsedTag(tag=tag, dish=dish)
+			used_tag.save()
+
+			print(dish)
+		else:
+			print(f"такое блюдо есть {dishes[0]}")
+			continue
+
+		for step in recipe_data['steps']:
+			step = DishStep(order=step['order'], dish=dish,
+							picture=step['img_link'], description=step['desc'])
+			step.save()
+
+		for component in recipe_data['products']:
+
+			try:
+
+				ingredient = component[0]
+				amount = component[1]
+			except IndexError:
+				is_dish_broken = True
+				continue
+
+			products = Product.objects.filter(title=ingredient)
+			if not products:
+				product = Product(title=ingredient)
+				product.save()
+			else:
+				product = products[0]
+			dish_product = DishProduct(product=product, dish=dish,
+									   amount=amount)
+			dish_product.save()
+		if is_dish_broken:
+			print(f" --- Удаляю сломанное блюдо {dish}")
+			is_dish_broken = False
+			dish.delete()
+
+
+def get_tag(tag_name):
+	tag = Tag.objects.filter(title=tag_name)
+	if not tag:
+		tag = Tag(title=tag_name)
+		tag.save()
+	else:
+		tag = Tag.objects.filter(title=tag_name)[0]
+	return tag
+
+
 def process_nongluten_recipes():
 	links = [f'https://www.iamcook.ru/event/baking/gluten-free-baking/{page+1}'
 			 for page in range(4)]
+	tag = get_tag("Без глютена")
+	print("\n Загружаю блюда без глютена \n")
 
 	for url in links:
-		for recipe_header in get_imcoock_recipe_header(url):
-			recipe_data = get_recipe_info(recipe_header)
-			print(recipe_data)
+		save_data(url, tag)
 
 
+def process_nonlactose_recipes():
+	url = "https://www.iamcook.ru/section/3551"
 
-def parse_nonlactose_cakes():
-	nolactose_cakes_url = "https://www.iamcook.ru/section/3551"
-	return get_recipe_info(nolactose_cakes_url)
+	tag = get_tag("Без Лактозы")
+	print("\n Загружаю блюда без Лактозы \n")
 
-def parse_vegetarian_dishes():
-	for page in range(5):
-		vegetarian_dishes_url = f"https://www.iamcook.ru/event/everyday/everyday-vegetarian/{page+1}"
-		return get_recipe_info(vegetarian_dishes_url)
+	save_data(url, tag)
+
+def prodess_vegetarian_recipes():
+	links = [f"https://www.iamcook.ru/event/everyday/everyday-vegetarian/{page+1}"
+			 for page in range(5)]
+
+	tag = get_tag("Для вегитарианцев")
+	print("\n Загружаю блюда для Веганов \n")
+
+	for url in links:
+		save_data(url, tag)
 
 
 def image_download():
@@ -103,9 +178,4 @@ def image_download():
 
 
 if __name__ == "__main__":
-	process_nongluten_recipes()
-
-
-
-	# print(parse_nonlactose_cakes())
-	# print(parse_vegetarian_dishes())
+	main()
