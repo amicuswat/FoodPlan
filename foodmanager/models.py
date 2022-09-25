@@ -3,12 +3,13 @@ from django.contrib.auth.models import AbstractBaseUser
 
 
 class User(AbstractBaseUser):
-    telegram_id = models.CharField(max_length=100)
+    telegram_id = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=50)
     phone = models.CharField(max_length=20)
     is_manager = models.BooleanField(default=False)
     is_premium = models.BooleanField(default=False)
 
+    USERNAME_FIELD = 'telegram_id'
 
 class Dish(models.Model):
     title = models.CharField(max_length=200)
