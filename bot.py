@@ -156,7 +156,7 @@ async def pers_cab(message: types.Message):
                          "Вот ваши любимые рецептики:",
                                reply_markup=liked_recipes_markup)
         user = User.objects.get(telegram_id=message.from_user.id)
-        user_dishes = UserDish.objects.filter(user=user)
+        user_dishes = UserDish.objects.filter(user=user, liked=True)
         user_dishes_len = len(user_dishes)
         current_dish = 0
         if current_dish <= user_dishes_len:
@@ -297,6 +297,9 @@ async def new_recipe(message: types.Message):
     if message.text == "Любой🍽":
         global rand_dish
         rand_dish = Dish.objects.order_by('?').first()
+        user_dish = UserDish.objects.filter(dish=rand_dish, user=message.from_user.id, disliked=True).first()
+        if user_dish is not None:
+            rand_dish = Dish.objects.order_by('?').first()
         dish_ingredients = DishProduct.objects.filter(dish=rand_dish)
         dish_steps = DishStep.objects.all().filter(dish=rand_dish)
         await bot.send_message(message.chat.id,
@@ -335,6 +338,10 @@ async def new_recipe(message: types.Message):
         nongluten_rand_used_tag = UsedTag.objects.order_by('?').filter(tag=3).first().dish
         global nongluten_rand_dish
         nongluten_rand_dish = Dish.objects.get(title=nongluten_rand_used_tag)
+        user_dish = UserDish.objects.filter(dish=nongluten_rand_dish, user=message.from_user.id, disliked=True).first()
+        if user_dish is not None:
+            nongluten_rand_used_tag = UsedTag.objects.order_by('?').filter(tag=3).first().dish
+            nongluten_rand_dish = Dish.objects.get(title=nongluten_rand_used_tag)
         nongluten_dish_ingredients = DishProduct.objects.filter(dish=nongluten_rand_dish)
         nongluten_dish_steps = DishStep.objects.all().filter(dish=nongluten_rand_dish)
 
@@ -375,10 +382,14 @@ async def new_recipe(message: types.Message):
         veg_rand_used_tag = UsedTag.objects.order_by('?').filter(tag=2).first().dish
         global veg_rand_dish
         veg_rand_dish = Dish.objects.get(title=veg_rand_used_tag)
+        user_dish = UserDish.objects.filter(dish=veg_rand_dish, user=message.from_user.id, disliked=True).first()
+        if user_dish is not None:
+            veg_rand_used_tag = UsedTag.objects.order_by('?').filter(tag=2).first().dish
+            veg_rand_dish = Dish.objects.get(title=veg_rand_used_tag)
         veg_dish_ingredients = DishProduct.objects.filter(dish=veg_rand_dish)
         veg_dish_steps = DishStep.objects.all().filter(dish=veg_rand_dish)
         await bot.send_message(message.chat.id,
-                                "Вот ваше безглютеновое блюдо:\n"
+                                "Вот ваше вегетарианское блюдо:\n"
                                 f"{veg_rand_dish.title}\n",
                                 reply_markup=like_dislike_markup)
 
@@ -414,12 +425,15 @@ async def new_recipe(message: types.Message):
         nonlactose_rand_used_tag = UsedTag.objects.order_by('?').filter(tag=1).first().dish
         global nonlactose_rand_dish
         nonlactose_rand_dish = Dish.objects.get(title=nonlactose_rand_used_tag)
-
+        user_dish = UserDish.objects.filter(dish=nonlactose_rand_dish, user=message.from_user.id, disliked=True).first()
+        if user_dish is not None:
+            nonlactose_rand_used_tag = UsedTag.objects.order_by('?').filter(tag=1).first().dish
+            nonlactose_rand_dish = Dish.objects.get(title=nonlactose_rand_used_tag)
 
         nonlactose_dish_ingredients = DishProduct.objects.filter(dish=nonlactose_rand_dish)
         nonlactose_dish_steps = DishStep.objects.all().filter(dish=nonlactose_rand_dish)
         await bot.send_message(message.chat.id,
-                                "Вот ваше безглютеновое блюдо:\n"
+                                "Вот ваше безлактозное блюдо:\n"
                                 f"{nonlactose_rand_dish.title}\n",
                                 reply_markup=like_dislike_markup)
 
