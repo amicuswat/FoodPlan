@@ -15,7 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from foodmanager import views
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('run_bot/', views.start_bot, name="start "),
 ]
