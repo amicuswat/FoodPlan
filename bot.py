@@ -1,4 +1,5 @@
 import logging
+import os
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
@@ -6,14 +7,15 @@ from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import requests
 from pathlib import PurePath, Path
-
+from dotenv import load_dotenv
 import asyncio
 
 from foodmanager.models import User, Dish, DishProduct, DishStep, UsedTag, UserDish
 
+load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot("5617328351:AAGitLmVsI8uOFCY6VppVJlvFRjD6dmQMBs")
+bot = Bot(os.getenv('TG_TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 
