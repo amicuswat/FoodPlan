@@ -15,7 +15,7 @@ from foodmanager.models import User, Dish, DishProduct, DishStep, UsedTag, UserD
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(os.getenv("TG_TOKEN"))
+bot = Bot(os.getenv('TG_TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 
