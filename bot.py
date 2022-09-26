@@ -602,6 +602,6 @@ def main():
     loop = get_or_create_eventloop()
     executor.start_polling(dp, loop=loop)
 
-    
+
 if __name__ == "__main__":
     main()
