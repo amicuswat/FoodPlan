@@ -13,7 +13,7 @@ from foodmanager.models import User, Dish, DishProduct, DishStep, UsedTag, UserD
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot("5617328351:AAGitLmVsI8uOFCY6VppVJlvFRjD6dmQMBs")
+bot = Bot("5656387036:AAHwrd28ThB1YOwM4jHqAom8LgnCgo8svXA")
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 
@@ -122,7 +122,8 @@ async def get_phone(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=reg_states.main_menu)
-async def main_menu(message: types.Message, state: FSMContext):
+async def main_menu(message: types.Message):
+    global main_menu_markup
     main_menu_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     new_recipe_button = types.KeyboardButton("Новый рецептик😋")
     pers_cab_button = types.KeyboardButton("Личный кабинет👤")
@@ -159,12 +160,9 @@ async def main_menu(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=reg_states.personal_cab)
+@dp.message_handler(state=reg_states.personal_cab)
 async def pers_cab(message: types.Message):
     global current_dish
-    main_menu_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    new_recipe_button = types.KeyboardButton("Новый рецептик😋")
-    pers_cab_button = types.KeyboardButton("Личный кабинет👤")
-    main_menu_markup.add(new_recipe_button, pers_cab_button)
     if message.text == "Главное меню📚":
         await bot.send_message(message.chat.id,
                                f"Чем вы хотите полакомиться? Что-то новое, или вами уже знакомое?",
@@ -181,80 +179,14 @@ async def pers_cab(message: types.Message):
                                reply_markup=liked_recipes_markup)
         user = User.objects.get(telegram_id=message.from_user.id)
         user_dishes = UserDish.objects.filter(user=user, liked=True)
-        user_dishes_len = len(user_dishes)
         current_dish = 0
-        if current_dish <= user_dishes_len:
-            user_dish = Dish.objects.get(userdish=user_dishes[current_dish])
-            dish_ingredients = DishProduct.objects.filter(dish=user_dish)
-            dish_steps = DishStep.objects.all().filter(dish=user_dish)
-            await bot.send_message(message.chat.id,
-                                   f"Вот ваше блюдо:\n"
-                                   f"{user_dish.title}\n")
-            with open(pic_download(user_dish.picture), 'rb') as file:
-                await bot.send_photo(message.chat.id,
-                                     file)
-
-            await bot.send_message(message.chat.id,
-                                   f"{user_dish.description}"
-                                   )
-            await bot.send_message(message.chat.id,
-                                   f"Ингредиенты:")
-
-            for dish_ingredient in dish_ingredients:
-                await bot.send_message(message.chat.id,
-                                       f"{dish_ingredient.product}{dish_ingredient.amount}\n")
-
-            await bot.send_message(message.chat.id,
-                                   "Инструкция по приготовлению:")
-            for dish_step in dish_steps:
-                if dish_step.picture:
-                    await bot.send_message(message.chat.id,
-                                           f"{dish_step.order}. {dish_step.description}")
-                    with open(pic_download(dish_step.picture), 'rb') as file:
-                        await bot.send_photo(message.chat.id,
-                                             file)
-                else:
-                    await bot.send_message(message.chat.id,
-                                           f"{dish_step.order}. {dish_step.description}")
+        await show_user_recipe(message, current_dish, user_dishes)
     if message.text == "Вперёд➡️":
         try:
             user = User.objects.get(telegram_id=message.from_user.id)
             user_dishes = UserDish.objects.filter(user=user)
-            user_dishes_len = len(user_dishes)
             current_dish += 1
-            if current_dish <= user_dishes_len:
-                user_dish = Dish.objects.get(userdish=user_dishes[current_dish])
-                dish_ingredients = DishProduct.objects.filter(dish=user_dish)
-                dish_steps = DishStep.objects.all().filter(dish=user_dish)
-                await bot.send_message(message.chat.id,
-                                       f"Вот ваше блюдо:\n"
-                                       f"{user_dish.title}\n")
-                with open(pic_download(user_dish.picture), 'rb') as file:
-                    await bot.send_photo(message.chat.id,
-                                         file)
-
-                await bot.send_message(message.chat.id,
-                                       f"{user_dish.description}"
-                                       )
-                await bot.send_message(message.chat.id,
-                                       f"Ингредиенты:")
-
-                for dish_ingredient in dish_ingredients:
-                    await bot.send_message(message.chat.id,
-                                           f"{dish_ingredient.product}{dish_ingredient.amount}\n")
-
-                await bot.send_message(message.chat.id,
-                                       "Инструкция по приготовлению:")
-                for dish_step in dish_steps:
-                    if dish_step.picture:
-                        await bot.send_message(message.chat.id,
-                                               f"{dish_step.order}. {dish_step.description}")
-                        with open(pic_download(dish_step.picture), 'rb') as file:
-                            await bot.send_photo(message.chat.id,
-                                                 file)
-                    else:
-                        await bot.send_message(message.chat.id,
-                                               f"{dish_step.order}. {dish_step.description}")
+            await show_user_recipe(message, current_dish, user_dishes)
         except IndexError:
             current_dish -= 1
             await bot.send_message(message.chat.id,
@@ -262,42 +194,9 @@ async def pers_cab(message: types.Message):
     if message.text == "⬅️Назад":
         user = User.objects.get(telegram_id=message.from_user.id)
         user_dishes = UserDish.objects.filter(user=user)
-        user_dishes_len = len(user_dishes)
         current_dish -= 1
         try:
-            if current_dish <= user_dishes_len:
-                user_dish = Dish.objects.get(userdish=user_dishes[current_dish])
-                dish_ingredients = DishProduct.objects.filter(dish=user_dish)
-                dish_steps = DishStep.objects.all().filter(dish=user_dish)
-                await bot.send_message(message.chat.id,
-                                       f"Вот ваше блюдо:\n"
-                                       f"{user_dish.title}\n")
-                with open(pic_download(user_dish.picture), 'rb') as file:
-                    await bot.send_photo(message.chat.id,
-                                         file)
-
-                await bot.send_message(message.chat.id,
-                                       f"{user_dish.description}"
-                                       )
-                await bot.send_message(message.chat.id,
-                                       f"Ингредиенты:")
-
-                for dish_ingredient in dish_ingredients:
-                    await bot.send_message(message.chat.id,
-                                           f"{dish_ingredient.product}{dish_ingredient.amount}\n")
-
-                await bot.send_message(message.chat.id,
-                                       "Инструкция по приготовлению:")
-                for dish_step in dish_steps:
-                    if dish_step.picture:
-                        await bot.send_message(message.chat.id,
-                                               f"{dish_step.order}. {dish_step.description}")
-                        with open(pic_download(dish_step.picture), 'rb') as file:
-                            await bot.send_photo(message.chat.id,
-                                                 file)
-                    else:
-                        await bot.send_message(message.chat.id,
-                                               f"{dish_step.order}. {dish_step.description}")
+            await show_user_recipe(message, current_dish, user_dishes)
         except AssertionError:
             current_dish += 1
             await bot.send_message(message.chat.id,
@@ -306,10 +205,6 @@ async def pers_cab(message: types.Message):
 
 @dp.message_handler(state=reg_states.new_recipe)
 async def new_recipe(message: types.Message):
-    main_menu_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    new_recipe_button = types.KeyboardButton("Новый рецептик😋")
-    pers_cab_button = types.KeyboardButton("Личный кабинет👤")
-    main_menu_markup.add(new_recipe_button, pers_cab_button)
     if message.text == "Главное меню📚":
         await bot.send_message(message.chat.id,
                                f"Чем вы хотите полакомиться? Что-то новое, или вами уже знакомое?",
@@ -376,10 +271,6 @@ async def new_recipe(message: types.Message):
 
 @dp.message_handler(state=reg_states.rand_new_recipe)
 async def like_dislike(message: types.Message):
-    main_menu_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    new_recipe_button = types.KeyboardButton("Новый рецептик😋")
-    pers_cab_button = types.KeyboardButton("Личный кабинет👤")
-    main_menu_markup.add(new_recipe_button, pers_cab_button)
     if message.text == "Сохранить❤":
         like(message.from_user.id, rand_dish)
         await bot.send_message(message.chat.id,
@@ -446,6 +337,41 @@ async def show_recipe(message, tag):
             await bot.send_message(message.chat.id,
                                    f"{rand_dish_step.order}. {rand_dish_step.description}")
     await reg_states.rand_new_recipe.set()
+
+
+async def show_user_recipe(message, current_dish, user_dishes):
+    user_dish = Dish.objects.get(userdish=user_dishes[current_dish])
+    dish_ingredients = DishProduct.objects.filter(dish=user_dish)
+    dish_steps = DishStep.objects.all().filter(dish=user_dish)
+    await bot.send_message(message.chat.id,
+                           f"Вот ваше блюдо:\n"
+                           f"{user_dish.title}\n")
+    with open(pic_download(user_dish.picture), 'rb') as file:
+        await bot.send_photo(message.chat.id,
+                             file)
+
+    await bot.send_message(message.chat.id,
+                           f"{user_dish.description}"
+                           )
+    await bot.send_message(message.chat.id,
+                           f"Ингредиенты:")
+
+    for dish_ingredient in dish_ingredients:
+        await bot.send_message(message.chat.id,
+                               f"{dish_ingredient.product}{dish_ingredient.amount}\n")
+
+    await bot.send_message(message.chat.id,
+                           "Инструкция по приготовлению:")
+    for dish_step in dish_steps:
+        if dish_step.picture:
+            await bot.send_message(message.chat.id,
+                                   f"{dish_step.order}. {dish_step.description}")
+            with open(pic_download(dish_step.picture), 'rb') as file:
+                await bot.send_photo(message.chat.id,
+                                     file)
+        else:
+            await bot.send_message(message.chat.id,
+                                   f"{dish_step.order}. {dish_step.description}")
 
 
 def like(user_telegram, dish):
