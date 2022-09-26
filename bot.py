@@ -7,13 +7,13 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import requests
 from pathlib import PurePath, Path
 
-
+import asyncio
 
 from foodmanager.models import User, Dish, DishProduct, DishStep, UsedTag, UserDish
 
 logging.basicConfig (level= logging.INFO)
 
-bot = Bot("5656387036:AAHwrd28ThB1YOwM4jHqAom8LgnCgo8svXA")
+bot = Bot("5617328351:AAGitLmVsI8uOFCY6VppVJlvFRjD6dmQMBs")
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 def pic_download(url):
@@ -587,7 +587,21 @@ def is_dish_disliked(user_telegram, dish):
     user = User.objects.get(telegram_id=user_telegram)
     UserDish.objects.get(user=user, dish=dish, disliked=True)
 
+
+def get_or_create_eventloop():
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError as ex:
+        if "There is no current event loop in thread" in str(ex):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return asyncio.get_event_loop()
+
 def main():
-    executor.start_polling(dp)
+    print("Бот Запущен")
+    loop = get_or_create_eventloop()
+    executor.start_polling(dp, loop=loop)
+
+
 if __name__ == "__main__":
     main()
