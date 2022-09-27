@@ -20,5 +20,4 @@ from foodmanager import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('run_bot/', views.start_bot, name="start "),
 ]
